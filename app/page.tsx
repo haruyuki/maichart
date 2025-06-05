@@ -1,102 +1,129 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect } from "react";
+import RatingGrid from "./components/RatingGrid";
+import { getDxRating } from "./utils/dxRating";
+import type { MaimaiSongDbEntry } from "./utils/maimaiSongDbEntry";
+
+const LATEST_VERSION = 25000;
+
+export interface Song {
+  songName: string;
+  chartType: number; // 0 for STD, 1 for DX
+  difficulty: number; // 0:easy, 1:advanced, 2:expert, 3:master, 4:remaster
+  achievement: number;
+  genre?: string;
+  level?: number;
+  version?: number; // Add version for matching
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [jsonInput, setJsonInput] = useState<string>("");
+  const [parsedSongs, setParsedSongs] = useState<{ newSongs: Song[]; oldSongs: Song[] }>({
+    newSongs: [],
+    oldSongs: [],
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [songDb, setSongDb] = useState<MaimaiSongDbEntry[] | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  // Fetch song DB once on mount
+  useEffect(() => {
+    fetch("https://otoge-db.net/maimai/data/music-ex-intl.json")
+      .then(res => res.json())
+      .then((db: MaimaiSongDbEntry[]) => setSongDb(db));
+  }, []);
+
+  const handleJsonSubmit = async () => {
+    try {
+      // Parse the JSON input
+      const songs = JSON.parse(jsonInput) as Song[];
+      if (!Array.isArray(songs)) {
+        setError("Input must be a JSON array");
+        return;
+      }
+      if (!songDb) {
+        setError("Song database not loaded yet. Please wait and try again.");
+        return;
+      }
+      // Map title to version
+      const versionMap: Record<string, number> = {};
+      songDb.forEach((entry: MaimaiSongDbEntry) => {
+        if (entry.title && entry.version) {
+          versionMap[entry.title.trim().toLowerCase()] = Number(entry.version);
+        }
+      });
+      // Attach the version and dxRating to user songs
+      const songsWithVersion = songs.map((song) => {
+        const version = versionMap[song.songName.trim().toLowerCase()] ?? 0;
+        const dxRating = getDxRating(song.level, song.achievement);
+        return { ...song, version, dxRating };
+      });
+      // Sort helper: dxRating desc, then achievement desc
+      const sortSongs = (a: Song & { dxRating: number; version: number }, b: Song & { dxRating: number; version: number }) => {
+        if (b.dxRating !== a.dxRating) return b.dxRating - a.dxRating;
+        return b.achievement - a.achievement;
+      };
+      // Split by version and sort
+      const newSongs = songsWithVersion
+        .filter((song) => song.version >= LATEST_VERSION)
+        .sort(sortSongs)
+        .slice(0, 15);
+      const oldSongs = songsWithVersion
+        .filter((song) => song.version < LATEST_VERSION)
+        .sort(sortSongs)
+        .slice(0, 35);
+      setParsedSongs({ newSongs, oldSongs });
+      setError(null);
+    } catch (err) {
+      setError("Invalid JSON format");
+      console.error(err);
+    }
+  };
+  return (
+    // Applied MaiMai theme classes and adjusted layout
+    <div className="min-h-screen p-8 pb-20 font-[family-name:var(--font-sans)] bg-maimai-dark-bg text-maimai-light-text">
+      <main className="max-w-6xl mx-auto">
+        <header className="text-center mb-12">
+          {/* You can add a MaiMai logo here if you have one */}
+          <h1 className="text-5xl font-bold text-maimai-pink animate-pulse">
+            MaiMai Achievement Tracker
+          </h1>
+        </header>
+
+        {/* Input Section */}
+        <div className="mb-12 p-6 bg-opacity-20 bg-maimai-blue rounded-lg shadow-xl">
+          <label className="block mb-3 text-xl font-medium text-maimai-yellow">
+            Input Your Song Achievements JSON:
+          </label>
+          <textarea
+            value={jsonInput}
+            onChange={(e) => setJsonInput(e.target.value)}
+            // Applied MaiMai input style
+            className="w-full h-48 p-4 maimai-input font-mono text-sm resize-y focus:ring-2 focus:ring-maimai-pink outline-none"
+            placeholder='Get JSON Data from https://myjian.github.io/mai-tools/rating-calculator/. Select Export as JSON (all records) and paste here.'
+          />
+          {error && <p className="text-red-400 mt-3 text-sm">Error: {error}</p>}
+          <button
+            onClick={handleJsonSubmit}
+            // Applied MaiMai button style
+            className="mt-6 maimai-button"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            Parse and Display Scores
+          </button>
         </div>
+
+        {/* Results Section - RatingGrid will be styled separately if needed */}
+        { songDb && (parsedSongs.newSongs.length > 0 || parsedSongs.oldSongs.length > 0) &&
+          <RatingGrid newSongs={parsedSongs.newSongs} oldSongs={parsedSongs.oldSongs} songDb={songDb} />
+        }
+
+        {/* Placeholder for additional MaiMai themed elements */}
+        {/* Example: <div className="mt-10 p-4 border-2 border-maimai-yellow rounded-md text-center">More MaiMai content here!</div> */}
+
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+
+      <footer className="text-center mt-16 text-sm text-maimai-light-pink">
+        <p>Inspired by SEGA MaiMai Universe. All rights reserved to their respective owners.</p>
       </footer>
     </div>
   );

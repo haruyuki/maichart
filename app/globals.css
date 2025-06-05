@@ -1,26 +1,83 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --maimai-pink: #FF69B4;
+  --maimai-blue: #00FFFF;
+  --maimai-yellow: #FFFF00;
+  --maimai-light-pink: #FFC0CB;
+  --maimai-dark-bg: #1E1E2E; /* Darker background for contrast */
+  --maimai-light-text: #FFFFFF;
+  --maimai-dark-text: #333333;
+
+  --background: var(--maimai-dark-bg);
+  --foreground: var(--maimai-light-text);
+
+  --font-geist-mono: 'Fira Mono', 'Consolas', 'Menlo', 'Monaco', monospace;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: "Poppins", sans-serif; /* Example of a playful sans-serif font */
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* Remove dark mode media query for a consistent theme */
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), sans-serif;
+}
+
+/* Additional MaiMai specific styles can be added here */
+.maimai-button {
+  background-color: var(--maimai-pink);
+  color: var(--maimai-light-text);
+  padding: 10px 20px;
+  border-radius: 25px; /* Rounded buttons like in MaiMai */
+  border: 2px solid var(--maimai-yellow);
+  font-weight: bold;
+  text-transform: uppercase;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.maimai-button:hover {
+  background-color: var(--maimai-light-pink);
+  color: var(--maimai-dark-text);
+  transform: scale(1.05);
+}
+
+.maimai-input {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 2px solid var(--maimai-blue);
+  color: var(--maimai-light-text);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.maimai-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.maimai-table {
+  border-collapse: separate;
+  border-spacing: 0 8px; /* Spacing between rows */
+}
+
+.maimai-table th, .maimai-table td {
+  background-color: rgba(0, 255, 255, 0.1); /* Translucent blue */
+  border: 1px solid var(--maimai-blue);
+  padding: 12px;
+  text-align: left;
+}
+
+.maimai-table th {
+  background-color: var(--maimai-pink);
+  color: var(--maimai-light-text);
+  font-weight: bold;
+}
+
+.maimai-table tr:hover td {
+  background-color: rgba(255, 105, 180, 0.2); /* Translucent pink on hover */
 }

@@ -1,0 +1,44 @@
+export interface MaimaiSongDbEntry {
+  sort: string;
+  title: string;
+  title_kana: string;
+  artist: string;
+  catcode: string;
+  version: string;
+  bpm: string;
+  image_url: string;
+  release: string;
+  lev_bas: string;
+  lev_adv: string;
+  lev_exp: string;
+  lev_mas: string;
+  lev_bas_notes: string;
+  lev_bas_notes_tap: string;
+  lev_bas_notes_hold: string;
+  lev_bas_notes_slide: string;
+  lev_bas_notes_break: string;
+  lev_adv_notes: string;
+  lev_adv_notes_tap: string;
+  lev_adv_notes_hold: string;
+  lev_adv_notes_slide: string;
+  lev_adv_notes_break: string;
+  lev_exp_i: string;
+  lev_exp_notes: string;
+  lev_exp_notes_tap: string;
+  lev_exp_notes_hold: string;
+  lev_exp_notes_slide: string;
+  lev_exp_notes_break: string;
+  lev_exp_designer: string;
+  lev_mas_i: string;
+  lev_mas_notes: string;
+  lev_mas_notes_tap: string;
+  lev_mas_notes_hold: string;
+  lev_mas_notes_slide: string;
+  lev_mas_notes_break: string;
+  lev_mas_designer: string;
+  wiki_url: string;
+  intl: string;
+  date_added: string;
+  date_intl_added: string;
+}
+
