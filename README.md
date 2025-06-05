@@ -7,7 +7,7 @@ This is a web application designed to help MaiMai players track their song achie
 *   **Achievement Tracking:** Input your song scores (exported from [mai-tools by myjian](https://myjian.github.io/mai-tools/rating-calculator/)) to see them organized.
 *   **DX Rating Calculation:** Automatically calculates and displays your total DX Rating based on your top scores.
 *   **New & Old Song Lists:** Separates scores into "New" (latest version) and "Old" song categories, displaying the top 15 new and top 35 old charts.
-*   **Dynamic Song Database:** Fetches the latest international song data from [otoge-db.net](https://otoge-db.net/maimai/data/music-ex-intl.json) to ensure up-to-date song information, versions, and cover art.
+*   **Dynamic Song Database:** Fetches the latest international song data from [otoge-db.net](https://otoge-db.net/maimai/) to ensure up-to-date song information, versions, and cover art.
 *   **Responsive Design:** View your scores удобный on various devices.
 
 ## Tech Stack
@@ -26,35 +26,8 @@ This is a web application designed to help MaiMai players track their song achie
 
 ## Data Sources
 
-*   Song Database: [https://otoge-db.net/maimai/data/music-ex-intl.json](https://otoge-db.net/maimai/data/music-ex-intl.json)
+*   Song Database: [https://otoge-db.net/maimai/](https://otoge-db.net/maimai/)
 *   Achievement Data Input Format: Based on exports from [https://myjian.github.io/mai-tools/rating-calculator/](https://myjian.github.io/mai-tools/rating-calculator/)
-
-## Local Development
-
-To run this project locally:
-
-1.  Clone the repository:
-    ```bash
-    git clone <repository-url>
-    cd maichart
-    ```
-2.  Install dependencies:
-    ```bash
-    npm install
-    # or
-    # yarn install
-    # or
-    # pnpm install
-    ```
-3.  Run the development server:
-    ```bash
-    npm run dev
-    # or
-    # yarn dev
-    # or
-    # pnpm dev
-    ```
-4.  Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 ---
 
