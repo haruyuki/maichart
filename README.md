@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MaiMai Achievement Tracker
 
-## Getting Started
+This is a web application designed to help MaiMai players track their song achievements and calculate their DX Rating. It visualizes scores for both new and old songs, providing a clear overview of performance.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+*   **Achievement Tracking:** Input your song scores (exported from [mai-tools by myjian](https://myjian.github.io/mai-tools/rating-calculator/)) to see them organized.
+*   **DX Rating Calculation:** Automatically calculates and displays your total DX Rating based on your top scores.
+*   **New & Old Song Lists:** Separates scores into "New" (latest version) and "Old" song categories, displaying the top 15 new and top 35 old charts.
+*   **Dynamic Song Database:** Fetches the latest international song data from [otoge-db.net](https://otoge-db.net/maimai/data/music-ex-intl.json) to ensure up-to-date song information, versions, and cover art.
+*   **Responsive Design:** View your scores удобный on various devices.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+*   **Next.js:** React framework for server-side rendering and static site generation.
+*   **TypeScript:** For type safety and improved developer experience.
+*   **Tailwind CSS:** Utility-first CSS framework for styling.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## How to Use
 
-## Learn More
+1.  **Export Your Data:** Go to the [mai-tools Rating Calculator](https://myjian.github.io/mai-tools/rating-calculator/).
+2.  **Input Your Scores:** Enter your song achievements on the mai-tools site.
+3.  **Export as JSON:** Once your scores are entered, use the "Export as JSON (all records)" option on mai-tools.
+4.  **Paste into Tracker:** Copy the exported JSON data.
+5.  **View Your Ratings:** Paste the JSON data into the input field on this MaiMai Achievement Tracker application and click "Parse and Display Scores". Your ratings and song lists will be displayed.
 
-To learn more about Next.js, take a look at the following resources:
+## Data Sources
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+*   Song Database: [https://otoge-db.net/maimai/data/music-ex-intl.json](https://otoge-db.net/maimai/data/music-ex-intl.json)
+*   Achievement Data Input Format: Based on exports from [https://myjian.github.io/mai-tools/rating-calculator/](https://myjian.github.io/mai-tools/rating-calculator/)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Local Development
 
-## Deploy on Vercel
+To run this project locally:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1.  Clone the repository:
+    ```bash
+    git clone <repository-url>
+    cd maichart
+    ```
+2.  Install dependencies:
+    ```bash
+    npm install
+    # or
+    # yarn install
+    # or
+    # pnpm install
+    ```
+3.  Run the development server:
+    ```bash
+    npm run dev
+    # or
+    # yarn dev
+    # or
+    # pnpm dev
+    ```
+4.  Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+*Inspired by SEGA's MaiMai Universe. All rights reserved to their respective owners.*
+
