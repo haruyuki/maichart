@@ -5,7 +5,7 @@ import RatingGrid from "./components/RatingGrid";
 import { getDxRating } from "./utils/dxRating";
 import type { MaimaiSongDbEntry } from "./utils/maimaiSongDbEntry";
 
-const LATEST_VERSION = 25000;
+const LATEST_VERSION = 25500;
 
 export interface Song {
   songName: string;
