@@ -15,14 +15,30 @@ export default function RatingGrid({ newSongs, oldSongs, songDb }: RatingGridPro
 
   // Build cover art map from songDb
   useEffect(() => {
-    if (!songDb) return;
+    if (!songDb) {
+      console.log('🔍 No songDb available for cover art mapping');
+      return;
+    }
+
+    console.log(`🔍 Building cover art map from ${songDb.length} database entries`);
     const map: Record<string, string> = {};
+    let mappedCount = 0;
+
     songDb.forEach((entry: MaimaiSongDbEntry) => {
       if (entry.title && entry.image_url) {
-        // The proxy is no longer needed, use the direct URL
-        map[entry.title.trim().toLowerCase()] = `https://otoge-db.net/maimai/jacket/${entry.image_url}`;
+        const key = entry.title.trim().toLowerCase();
+        const url = `https://otoge-db.net/maimai/jacket/${entry.image_url}`;
+        map[key] = url;
+        mappedCount++;
+
+        // Log first few entries for debugging
+        if (mappedCount <= 5) {
+          console.log(`🎨 Mapped: "${entry.title}" -> "${key}" -> ${url}`);
+        }
       }
     });
+
+    console.log(`✅ Cover art map built: ${mappedCount} entries mapped`);
     setCoverArtMap(map);
   }, [songDb]);
 
@@ -74,7 +90,7 @@ export default function RatingGrid({ newSongs, oldSongs, songDb }: RatingGridPro
           📊 Your rating data is ready!
         </p>
         <p className="text-sm text-gray-600">
-          Click the button below to generate and download your rating chart
+          Your rating chart will generate automatically below
         </p>
       </div>
 

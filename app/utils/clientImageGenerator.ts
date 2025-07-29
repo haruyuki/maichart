@@ -155,17 +155,43 @@ export const generateRatingChart = async (
   }
 
   console.log(`📊 Received data: ${newSongs.length} new songs, ${oldSongs.length} old songs`);
+  console.log(`🗺️ Cover art map has ${Object.keys(coverArtMap).length} entries`);
+
+  // Log some sample songs and their lookup attempts
+  if (newSongs.length > 0) {
+    console.log('🎵 Sample new songs for matching:');
+    newSongs.slice(0, 3).forEach((song, i) => {
+      const lookupKey = song.songName.trim().toLowerCase();
+      const found = coverArtMap[lookupKey];
+      console.log(`  ${i+1}. "${song.songName}" -> "${lookupKey}" -> ${found ? 'FOUND' : 'NOT FOUND'}`);
+    });
+  }
+
+  if (oldSongs.length > 0) {
+    console.log('🎵 Sample old songs for matching:');
+    oldSongs.slice(0, 3).forEach((song, i) => {
+      const lookupKey = song.songName.trim().toLowerCase();
+      const found = coverArtMap[lookupKey];
+      console.log(`  ${i+1}. "${song.songName}" -> "${lookupKey}" -> ${found ? 'FOUND' : 'NOT FOUND'}`);
+    });
+  }
 
   // Cache for loaded images
   const imageCache = new Map<string, HTMLImageElement>();
   const loadCoverArt = async (url: string): Promise<HTMLImageElement | undefined> => {
-    if (!url) return undefined;
+    if (!url) {
+      console.log('⚠️ No cover art URL provided');
+      return undefined;
+    }
     if (imageCache.has(url)) {
+      console.log(`📦 Using cached image for: ${url}`);
       return imageCache.get(url);
     }
     try {
+      console.log(`🔄 Loading cover art from: ${url}`);
       const image = await loadImage(url);
       imageCache.set(url, image);
+      console.log(`✅ Successfully loaded: ${url}`);
       return image;
     } catch (e) {
       console.error(`❌ Failed to load cover art from ${url}`, e);
@@ -280,6 +306,7 @@ export const generateRatingChart = async (
         const y = currentY + row * (itemHeight + gap);
 
         const coverArtUrl = coverArtMap[song.songName.trim().toLowerCase()];
+        console.log(`🎨 Song: "${song.songName}" -> URL: ${coverArtUrl || 'NOT FOUND'}`);
         const coverArtImage = await loadCoverArt(coverArtUrl);
 
         try {
