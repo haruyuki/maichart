@@ -3,20 +3,39 @@
 import { SongWithRating } from '@/app/types';
 import { getDifficultyColor } from '@/app/utils/dxRating';
 
+// Helper function to ensure fonts are loaded before canvas rendering
+const loadFonts = async (): Promise<void> => {
+  // Check if FontFace API is available
+  if (typeof document !== 'undefined' && 'fonts' in document) {
+    try {
+      // Load Roboto font weights that match your Next.js config
+      await Promise.all([
+        document.fonts.load('400 16px Roboto'),
+        document.fonts.load('700 16px Roboto'),
+      ]);
+
+      // Wait a bit for fonts to be fully available
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    } catch (error) {
+      console.warn('Failed to load Roboto fonts, falling back to system fonts:', error);
+    }
+  }
+};
+
 // Cache for commonly used strings and styles
 const FONTS = {
-  headerTitle: 'bold 32px Arial, sans-serif',
-  headerSubtitle: 'bold 24px Arial, sans-serif',
-  headerInfo: '20px Arial, sans-serif',
-  sectionTitle: 'bold 28px Arial, sans-serif',
-  itemIndex: 'bold 16px Arial, sans-serif',
-  itemChartType: 'bold 13px Arial, sans-serif',
-  itemSongName: '14px Arial, sans-serif',
-  itemAchievement: '13px Arial, sans-serif',
-  itemRating: 'bold 25px Arial, sans-serif',
-  itemLevel: 'bold 18px Arial, sans-serif',
-  itemDxRating: 'bold 40px Arial, sans-serif',
-  placeholder: 'bold 16px Arial, sans-serif'
+  headerTitle: 'bold 32px Roboto, Arial, sans-serif',
+  headerSubtitle: 'bold 24px Roboto, Arial, sans-serif',
+  headerInfo: '20px Roboto, Arial, sans-serif',
+  sectionTitle: 'bold 28px Roboto, Arial, sans-serif',
+  itemIndex: 'bold 16px Roboto, Arial, sans-serif',
+  itemChartType: 'bold 13px Roboto, Arial, sans-serif',
+  itemSongName: '14px Roboto, Arial, sans-serif',
+  itemAchievement: '13px Roboto, Arial, sans-serif',
+  itemRating: 'bold 25px Roboto, Arial, sans-serif',
+  itemLevel: 'bold 18px Roboto, Arial, sans-serif',
+  itemDxRating: 'bold 40px Roboto, Arial, sans-serif',
+  placeholder: 'bold 16px Roboto, Arial, sans-serif',
 } as const;
 
 const COLORS = {
@@ -30,10 +49,9 @@ const COLORS = {
   placeholderText: 'rgba(255,255,255,0.7)',
   placeholderBorder: 'rgba(255,255,255,0.3)',
   itemBorder: 'rgba(255,255,255,0.5)',
-  overlay: 'rgba(0, 0, 0, 0.6)'
+  overlay: 'rgba(0, 0, 0, 0.6)',
 } as const;
 
-// Helper function to get achievement rating with memoization
 const achievementRatingCache = new Map<number, string>();
 const getAchievementRating = (achievement: number): string => {
   const rounded = Math.floor(achievement * 100) / 100; // Round to 2 decimal places for caching
@@ -83,13 +101,13 @@ const loadImage = (url: string, timeout = 10000): Promise<HTMLImageElement> => {
 const batchLoadImages = async (
   songs: SongWithRating[],
   coverArtMap: Record<string, string>,
-  onProgress?: (loaded: number, total: number) => void
+  onProgress?: (loaded: number, total: number) => void,
 ): Promise<Map<string, HTMLImageElement>> => {
   const imageCache = new Map<string, HTMLImageElement>();
   const uniqueUrls = new Set<string>();
 
   // Collect all unique URLs
-  songs.forEach(song => {
+  songs.forEach((song) => {
     if (song.songName !== 'NO DATA') {
       const url = coverArtMap[song.songName.trim().toLowerCase()];
       if (url && !imageCache.has(url)) {
@@ -119,15 +137,55 @@ const batchLoadImages = async (
   return imageCache;
 };
 
-// Optimized text truncation with caching
+// Optimized text truncation with canvas measurement
 const truncationCache = new Map<string, string>();
-const getTruncatedText = (text: string, maxLength: number = 20): string => {
-  const key = `${text}_${maxLength}`;
+const getTruncatedText = (
+  text: string,
+  maxWidth?: number,
+  ctx?: CanvasRenderingContext2D,
+): string => {
+  // If no canvas context or maxWidth provided, use simple character-based truncation
+  if (!ctx || !maxWidth) {
+    const maxLength = 20;
+    const key = `${text}_${maxLength}`;
+    if (truncationCache.has(key)) {
+      return truncationCache.get(key)!;
+    }
+    const result = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    truncationCache.set(key, result);
+    return result;
+  }
+
+  // Use canvas text measurement for accurate truncation
+  const key = `${text}_${maxWidth}_${ctx.font}`;
   if (truncationCache.has(key)) {
     return truncationCache.get(key)!;
   }
 
-  const result = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  const textWidth = ctx.measureText(text).width;
+  if (textWidth <= maxWidth) {
+    truncationCache.set(key, text);
+    return text;
+  }
+
+  // Binary search for the best fit
+  let start = 0;
+  let end = text.length;
+  let result = text;
+
+  while (start < end) {
+    const mid = Math.floor((start + end + 1) / 2);
+    const truncated = text.substring(0, mid) + '...';
+    const width = ctx.measureText(truncated).width;
+
+    if (width <= maxWidth) {
+      result = truncated;
+      start = mid;
+    } else {
+      end = mid - 1;
+    }
+  }
+
   truncationCache.set(key, result);
   return result;
 };
@@ -139,31 +197,10 @@ const createRoundedRectPath = (
   y: number,
   width: number,
   height: number,
-  radius: number = 12
+  radius: number = 12,
 ): void => {
   ctx.beginPath();
   ctx.roundRect(x, y, width, height, radius);
-};
-
-// Cache for gradients
-const gradientCache = new Map<string, CanvasGradient>();
-const getPlaceholderGradient = (
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number
-): CanvasGradient => {
-  const key = `placeholder_${width}_${height}`;
-  if (gradientCache.has(key)) {
-    return gradientCache.get(key)!;
-  }
-
-  const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
-  gradient.addColorStop(0, 'rgba(255,255,255,0.1)');
-  gradient.addColorStop(1, 'rgba(255,255,255,0.05)');
-  gradientCache.set(key, gradient);
-  return gradient;
 };
 
 // Helper function to draw a grid item - optimized version
@@ -179,89 +216,211 @@ const drawGridItem = (
   coverArtImage?: HTMLImageElement,
 ) => {
   const isPlaceholder = song.difficulty === -1;
+  const paddingX = 8;
+  const paddingY = 0;
 
-  // Draw background
-  if (coverArtImage) {
-    // Draw the image, clipped to the rounded rect
-    ctx.save();
-    createRoundedRectPath(ctx, x, y, width, height);
-    ctx.clip();
-    ctx.drawImage(coverArtImage, x, y, width, height);
-    ctx.restore();
+  // Create a rounded rectangle path
+  createRoundedRectPath(ctx, x, y, width, height);
 
-    // Add a dark overlay for text readability
-    ctx.fillStyle = COLORS.overlay;
-    createRoundedRectPath(ctx, x, y, width, height);
-    ctx.fill();
-  } else if (isPlaceholder) {
-    // Gradient background for placeholder
-    ctx.fillStyle = getPlaceholderGradient(ctx, x, y, width, height);
-    createRoundedRectPath(ctx, x, y, width, height);
+  if (isPlaceholder) {
+    // Placeholder background
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
     ctx.fill();
   } else {
-    // Difficulty color background
+    // Save the current state and clip to rounded rectangle for all content
+    ctx.save();
+    ctx.clip();
+
+    // Draw cover art background if available
+    if (coverArtImage) {
+      // Calculate scaling and positioning for "cover" behavior
+      const imageAspect = coverArtImage.width / coverArtImage.height;
+      const containerAspect = width / height;
+
+      let drawWidth, drawHeight, drawX, drawY;
+
+      if (imageAspect > containerAspect) {
+        // Image is wider than container - scale by height
+        drawHeight = height;
+        drawWidth = height * imageAspect;
+        drawX = x - (drawWidth - width) / 2; // Center horizontally
+        drawY = y;
+      } else {
+        // Image is taller than container - scale by width
+        drawWidth = width;
+        drawHeight = width / imageAspect;
+        drawX = x;
+        drawY = y - (drawHeight - height) / 2; // Center vertically
+      }
+
+      // Draw blurred cover art
+      ctx.filter = 'blur(2px)';
+      ctx.drawImage(coverArtImage, drawX, drawY, drawWidth, drawHeight);
+
+      // Draw dark overlay
+      ctx.filter = 'none';
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.fillRect(x, y, width, height);
+    }
+
+    // Draw difficulty triangle (top-right corner) - now clipped to rounded rectangle
+    const triangleSize = 55;
     ctx.fillStyle = getDifficultyColor(song.difficulty);
-    createRoundedRectPath(ctx, x, y, width, height);
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    ctx.moveTo(x + width - triangleSize, y);
+    ctx.lineTo(x + width, y);
+    ctx.lineTo(x + width, y + triangleSize * 0.7);
+    ctx.closePath();
     ctx.fill();
+    ctx.globalAlpha = 1.0;
+
+    // Restore the context (removes clipping)
+    ctx.restore();
+
+    // Recreate the path for the border
+    createRoundedRectPath(ctx, x, y, width, height);
   }
 
   // Draw border
-  ctx.strokeStyle = isPlaceholder ? COLORS.placeholderBorder : COLORS.itemBorder;
+  ctx.strokeStyle = isPlaceholder ? COLORS.placeholderBorder : getDifficultyColor(song.difficulty);
   ctx.lineWidth = 3;
   ctx.stroke();
 
   if (isPlaceholder) {
-    // Draw placeholder content
+    // Draw placeholder content centered
     ctx.fillStyle = COLORS.placeholderText;
     ctx.font = FONTS.placeholder;
     ctx.textAlign = 'center';
-    ctx.fillText('NO DATA', x + width / 2, y + height / 2);
+    ctx.textBaseline = 'middle';
+    ctx.fillText('❌', x + width / 2, y + height / 2 - 10);
+    ctx.fillText('NO DATA', x + width / 2, y + height / 2 + 15);
     return;
   }
 
   const textColor = coverArtImage ? COLORS.white : COLORS.black;
 
-  // Draw index (top-left)
+  // TOP SECTION - Index, Song Name, Chart Type
   ctx.fillStyle = textColor;
+  ctx.textBaseline = 'top';
+
+  // Draw index (top-left)
   ctx.font = FONTS.itemIndex;
   ctx.textAlign = 'left';
-  ctx.fillText((index + 1).toString(), x + 8, y + 20);
+  ctx.fillText(`#${index + 1}`, x + paddingX, y + paddingY + 4);
 
-  // Draw chart type (top-right)
-  ctx.fillStyle = chartType === 'DX' ? COLORS.chartTypeDX : COLORS.chartTypeSTD;
-  ctx.font = FONTS.itemChartType;
-  ctx.textAlign = 'right';
-  ctx.fillText(chartType, x + width - 8, y + 18);
-
-  // Draw song name (truncated)
-  ctx.fillStyle = textColor;
+  // Draw song name (below index, left-aligned, truncated)
   ctx.font = FONTS.itemSongName;
-  ctx.textAlign = 'center';
-  const truncatedName = getTruncatedText(song.songName);
-  ctx.fillText(truncatedName, x + width / 2, y + 45);
+  ctx.textAlign = 'left';
+  const maxSongNameWidth = width - paddingX * 2 - 20; // Leave space for triangle
+  const truncatedName = getTruncatedText(song.songName, maxSongNameWidth, ctx);
+  ctx.fillText(truncatedName, x + paddingX, y + paddingY + 24);
 
-  // Draw achievement percentage
-  ctx.fillStyle = COLORS.lightGray;
+  // Draw chart type (below song name, left-aligned)
+  ctx.font = FONTS.itemChartType;
+  ctx.textAlign = 'left';
+  ctx.fillText(chartType, x + paddingX, y + paddingY + 44);
+
+  // BOTTOM SECTION - Achievement & Rating (left), Level & DX Rating (right)
+  ctx.textBaseline = 'bottom';
+
+  // Bottom-left: Achievement and Rating
+  ctx.textAlign = 'left';
+
+  // Achievement percentage
+  ctx.fillStyle = textColor;
   ctx.font = FONTS.itemAchievement;
-  ctx.fillText(`${song.achievement.toFixed(2)}%`, x + width / 2, y + 65);
+  ctx.fillText(song.achievement.toFixed(4), x + paddingX, y + height - paddingY - 25);
 
-  // Draw achievement rating
-  ctx.fillStyle = COLORS.yellow;
+  // Achievement rating
+  ctx.fillStyle = COLORS.white;
   ctx.font = FONTS.itemRating;
-  ctx.fillText(getAchievementRating(song.achievement), x + width / 2, y + 90);
+  ctx.fillText(getAchievementRating(song.achievement), x + paddingX, y + height - paddingY);
 
-  // Draw level
-  if (song.level !== undefined) {
-    ctx.fillStyle = textColor;
-    ctx.font = FONTS.itemLevel;
-    ctx.fillText(`Lv.${song.level}`, x + width / 2, y + 110);
-  }
+  // Bottom-right: Level and DX Rating
+  ctx.textAlign = 'right';
 
-  // Draw DX rating (bottom)
-  ctx.fillStyle = COLORS.blue;
+  // Level
+  ctx.fillStyle = textColor;
+  ctx.font = FONTS.itemLevel;
+  const levelText = song.level !== undefined ? song.level.toString() : '-';
+  ctx.fillText(levelText, x + width - paddingX, y + height - paddingY - 40);
+
+  // DX Rating
+  ctx.fillStyle = COLORS.white;
   ctx.font = FONTS.itemDxRating;
-  ctx.fillText(song.dxRating.toString(), x + width / 2, y + height - 10);
+  ctx.fillText(song.dxRating.toString(), x + width - paddingX, y + height - paddingY);
 };
+
+// Helper function to draw section header
+const drawSectionHeader = (
+  ctx: CanvasRenderingContext2D,
+  title: string,
+  canvasWidth: number,
+  y: number,
+  sectionTitleHeight: number,
+): void => {
+  ctx.fillStyle = COLORS.black;
+  ctx.font = FONTS.sectionTitle;
+  ctx.textAlign = 'center';
+  ctx.fillText(title, canvasWidth / 2, y + sectionTitleHeight / 2 + 10);
+};
+
+// Helper function to draw a songs grid
+const drawSongsGrid = (
+  ctx: CanvasRenderingContext2D,
+  songs: SongWithRating[],
+  coverArtMap: Record<string, string>,
+  imageCache: Map<string, HTMLImageElement>,
+  startY: number,
+  canvasWidth: number,
+  itemWidth: number,
+  itemHeight: number,
+  gap: number,
+  columns: number,
+  maxSongs: number,
+): void => {
+  const rows = Math.ceil(maxSongs / columns);
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < columns; col++) {
+      const index = row * columns + col;
+      if (index < maxSongs) {
+        const song = songs[index];
+        const x =
+          (canvasWidth - (columns * itemWidth + (columns - 1) * gap)) / 2 + col * (itemWidth + gap);
+        const y = startY + row * (itemHeight + gap);
+
+        const coverArtUrl = coverArtMap[song.songName.trim().toLowerCase()];
+        const coverArtImage = coverArtUrl ? imageCache.get(coverArtUrl) : undefined;
+
+        try {
+          drawGridItem(
+            ctx,
+            song,
+            x,
+            y,
+            itemWidth,
+            itemHeight,
+            index,
+            song.chartType === 1 ? 'DX' : 'STD',
+            coverArtImage,
+          );
+        } catch (itemError) {
+          console.error(`Error drawing song item ${index} ('${song.songName}'):`, itemError);
+        }
+      }
+    }
+  }
+};
+
+// Configuration interface for sections
+interface SectionConfig {
+  title: string;
+  songs: SongWithRating[];
+  maxSongs: number;
+  progressMessage: string;
+}
 
 export const generateRatingChart = async (
   newSongs: SongWithRating[],
@@ -273,6 +432,11 @@ export const generateRatingChart = async (
   if (!newSongs) newSongs = [];
   if (!oldSongs) oldSongs = [];
   if (!coverArtMap) coverArtMap = {};
+
+  onProgress?.('Loading fonts...');
+
+  // Ensure fonts are loaded before canvas operations
+  await loadFonts();
 
   onProgress?.('Setting up canvas...');
 
@@ -379,96 +543,58 @@ export const generateRatingChart = async (
   ctx.fillText(`⭐ New: ${totalNewDxRating.toLocaleString()}`, canvasWidth / 2 - 150, 120);
   ctx.fillText(`📀 Old: ${totalOldDxRating.toLocaleString()}`, canvasWidth / 2 + 150, 120);
 
-  // Draw NEW CHARTS section
+  // Configuration for both sections
+  const sections: SectionConfig[] = [
+    {
+      title: '🌟 NEW CHARTS (15 songs) 🌟',
+      songs: preparedNewSongs,
+      maxSongs: 15,
+      progressMessage: 'Drawing new charts...',
+    },
+    {
+      title: '📀 OLD CHARTS (35 songs) 📀',
+      songs: preparedOldSongs,
+      maxSongs: 35,
+      progressMessage: 'Drawing old charts...',
+    },
+  ];
+
   let currentY = topMargin + headerHeight;
-  ctx.fillStyle = COLORS.black;
-  ctx.font = FONTS.sectionTitle;
-  ctx.textAlign = 'center';
-  ctx.fillText(
-    '🌟 NEW CHARTS (15 songs) 🌟',
-    canvasWidth / 2,
-    currentY + sectionTitleHeight / 2 + 10,
-  );
-  currentY += sectionTitleHeight;
+  const columns = 5;
 
-  onProgress?.('Drawing new charts...');
-
-  // Draw new songs grid (5 columns, 3 rows)
-  for (let row = 0; row < newSongsRows; row++) {
-    for (let col = 0; col < 5; col++) {
-      const index = row * 5 + col;
-      if (index < 15) {
-        const song = preparedNewSongs[index];
-        const x = (canvasWidth - (5 * itemWidth + 4 * gap)) / 2 + col * (itemWidth + gap);
-        const y = currentY + row * (itemHeight + gap);
-
-        const coverArtUrl = coverArtMap[song.songName.trim().toLowerCase()];
-        const coverArtImage = coverArtUrl ? imageCache.get(coverArtUrl) : undefined;
-
-        try {
-          drawGridItem(
-            ctx,
-            song,
-            x,
-            y,
-            itemWidth,
-            itemHeight,
-            index,
-            song.chartType === 1 ? 'DX' : 'STD',
-            coverArtImage,
-          );
-        } catch (itemError) {
-          console.error(`Error drawing new song item ${index} ('${song.songName}'):`, itemError);
-        }
-      }
+  // Draw both sections using the same logic
+  sections.forEach((section, sectionIndex) => {
+    // Add spacing before old charts section
+    if (sectionIndex > 0) {
+      currentY += sectionSpacing;
     }
-  }
-  currentY += newSongsGridHeight;
 
-  // Draw OLD CHARTS section
-  currentY += sectionSpacing;
-  ctx.fillStyle = COLORS.black;
-  ctx.font = FONTS.sectionTitle;
-  ctx.textAlign = 'center';
-  ctx.fillText(
-    '📀 OLD CHARTS (35 songs) 📀',
-    canvasWidth / 2,
-    currentY + sectionTitleHeight / 2 + 10,
-  );
-  currentY += sectionTitleHeight;
+    // Draw section header
+    drawSectionHeader(ctx, section.title, canvasWidth, currentY, sectionTitleHeight);
+    currentY += sectionTitleHeight;
 
-  onProgress?.('Drawing old charts...');
+    onProgress?.(section.progressMessage);
 
-  // Draw old songs grid (5 columns, 7 rows)
-  for (let row = 0; row < oldSongsRows; row++) {
-    for (let col = 0; col < 5; col++) {
-      const index = row * 5 + col;
-      if (index < 35) {
-        const song = preparedOldSongs[index];
-        const x = (canvasWidth - (5 * itemWidth + 4 * gap)) / 2 + col * (itemWidth + gap);
-        const y = currentY + row * (itemHeight + gap);
+    // Draw songs grid
+    drawSongsGrid(
+      ctx,
+      section.songs,
+      coverArtMap,
+      imageCache,
+      currentY,
+      canvasWidth,
+      itemWidth,
+      itemHeight,
+      gap,
+      columns,
+      section.maxSongs,
+    );
 
-        const coverArtUrl = coverArtMap[song.songName.trim().toLowerCase()];
-        const coverArtImage = coverArtUrl ? imageCache.get(coverArtUrl) : undefined;
-
-        try {
-          drawGridItem(
-            ctx,
-            song,
-            x,
-            y,
-            itemWidth,
-            itemHeight,
-            index,
-            song.chartType === 1 ? 'DX' : 'STD',
-            coverArtImage,
-          );
-        } catch (itemError) {
-          console.error(`Error drawing old song item ${index} ('${song.songName}'):`, itemError);
-        }
-      }
-    }
-  }
+    // Update currentY for next section
+    const rows = Math.ceil(section.maxSongs / columns);
+    const gridHeight = rows * itemHeight + (rows - 1) * gap;
+    currentY += gridHeight;
+  });
 
   onProgress?.('Finalizing image...');
 
