@@ -31,16 +31,16 @@ export function getDxRating(level: number | undefined, achievement: number): num
 export function getDifficultyColor(difficulty: number): string {
   switch (difficulty) {
     case 4: // Remaster
-      return "#e1beff"; // bright purple
+      return '#e1beff'; // bright purple
     case 3: // Master
-      return "#c002f0"; // purple
+      return '#c002f0'; // purple
     case 2: // Expert
-      return "#ff008a"; // red
+      return '#ff008a'; // red
     case 1: // Advanced
-      return "#ffb400"; // orange
+      return '#ffb400'; // orange
     case 0: // Basic
-      return "#81d955"; // green
+      return '#81d955'; // green
     default:
-      return "#1477e6"; // blue
+      return '#1477e6'; // blue
   }
 }
