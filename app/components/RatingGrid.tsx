@@ -1,8 +1,8 @@
 'use client';
 
-import {useEffect, useState} from 'react';
-import {MaimaiSongDbEntry, SongWithRating} from '../types';
-import {ExportButton} from './ExportButton';
+import { useEffect, useState } from 'react';
+import { MaimaiSongDbEntry, SongWithRating } from '../types';
+import { ExportButton } from './ExportButton';
 
 interface RatingGridProps {
   newSongs: SongWithRating[];
@@ -51,9 +51,7 @@ export default function RatingGrid({ newSongs, oldSongs, songDb }: RatingGridPro
     <div className="maimai-rating-container flex w-full flex-col items-center p-8">
       {/* Header with totals */}
       <div className="maimai-header mb-8 rounded-xl bg-white/90 p-6 text-center shadow-lg backdrop-blur-sm">
-        <h2 className="mb-4 text-4xl font-black text-gray-800">
-          🎵 maimai DX Rating Chart 🎵
-        </h2>
+        <h2 className="mb-4 text-4xl font-black text-gray-800">🎵 maimai DX Rating Chart 🎵</h2>
         <div className="maimai-total-rating mb-4 text-3xl font-black text-blue-600">
           <div className="maimai-text-outline">Total: {totalDxRating.toLocaleString()}</div>
         </div>
@@ -65,20 +63,12 @@ export default function RatingGrid({ newSongs, oldSongs, songDb }: RatingGridPro
 
       {/* Instructions */}
       <div className="mb-8 text-center">
-        <p className="text-lg text-gray-700 mb-2">
-          📊 Your rating data is ready!
-        </p>
-        <p className="text-sm text-gray-600">
-          Your rating chart will generate automatically below
-        </p>
+        <p className="mb-2 text-lg text-gray-700">📊 Your rating data is ready!</p>
+        <p className="text-sm text-gray-600">Your rating chart will generate automatically below</p>
       </div>
 
       {/* Client-side Export Button */}
-      <ExportButton
-        newSongs={newSongs}
-        oldSongs={oldSongs}
-        coverArtMap={coverArtMap}
-      />
+      <ExportButton newSongs={newSongs} oldSongs={oldSongs} coverArtMap={coverArtMap} />
     </div>
   );
 }

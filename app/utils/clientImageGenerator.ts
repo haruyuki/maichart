@@ -38,7 +38,7 @@ const drawGridItem = (
   height: number,
   index: number,
   chartType: string,
-  coverArtImage?: HTMLImageElement
+  coverArtImage?: HTMLImageElement,
 ) => {
   const isPlaceholder = song.difficulty === -1;
 
@@ -57,7 +57,6 @@ const drawGridItem = (
     ctx.beginPath();
     ctx.roundRect(x, y, width, height, 12);
     ctx.fill();
-
   } else if (isPlaceholder) {
     // Gradient background for placeholder
     const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
@@ -107,7 +106,8 @@ const drawGridItem = (
   ctx.fillStyle = textColor;
   ctx.font = '14px Arial, sans-serif';
   ctx.textAlign = 'center';
-  const truncatedName = song.songName.length > 20 ? song.songName.substring(0, 20) + '...' : song.songName;
+  const truncatedName =
+    song.songName.length > 20 ? song.songName.substring(0, 20) + '...' : song.songName;
   ctx.fillText(truncatedName, x + width / 2, y + 45);
 
   // Draw achievement percentage
@@ -137,7 +137,7 @@ export const generateRatingChart = async (
   newSongs: SongWithRating[],
   oldSongs: SongWithRating[],
   coverArtMap: Record<string, string>,
-  onProgress?: (status: string) => void
+  onProgress?: (status: string) => void,
 ): Promise<string> => {
   // Defensive checks for undefined inputs
   if (!newSongs) {
@@ -245,7 +245,11 @@ export const generateRatingChart = async (
   ctx.fillStyle = '#000';
   ctx.font = 'bold 28px Arial, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('🌟 NEW CHARTS (15 songs) 🌟', canvasWidth / 2, currentY + sectionTitleHeight / 2 + 10);
+  ctx.fillText(
+    '🌟 NEW CHARTS (15 songs) 🌟',
+    canvasWidth / 2,
+    currentY + sectionTitleHeight / 2 + 10,
+  );
   currentY += sectionTitleHeight;
 
   // Prepare new songs with placeholders
@@ -271,13 +275,25 @@ export const generateRatingChart = async (
         const x = (canvasWidth - (5 * itemWidth + 4 * gap)) / 2 + col * (itemWidth + gap);
         const y = currentY + row * (itemHeight + gap);
 
-        onProgress?.(`Processing new chart ${index + 1}/15: ${song.songName === 'NO DATA' ? 'Empty slot' : song.songName}`);
+        onProgress?.(
+          `Processing new chart ${index + 1}/15: ${song.songName === 'NO DATA' ? 'Empty slot' : song.songName}`,
+        );
 
         const coverArtUrl = coverArtMap[song.songName.trim().toLowerCase()];
         const coverArtImage = await loadCoverArt(coverArtUrl);
 
         try {
-          drawGridItem(ctx, song, x, y, itemWidth, itemHeight, index, song.chartType === 1 ? 'DX' : 'STD', coverArtImage);
+          drawGridItem(
+            ctx,
+            song,
+            x,
+            y,
+            itemWidth,
+            itemHeight,
+            index,
+            song.chartType === 1 ? 'DX' : 'STD',
+            coverArtImage,
+          );
         } catch (itemError) {
           console.error(`Error drawing new song item ${index} ('${song.songName}'):`, itemError);
           // Continue with the rest of the grid
@@ -292,7 +308,11 @@ export const generateRatingChart = async (
   ctx.fillStyle = '#000';
   ctx.font = 'bold 28px Arial, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('📀 OLD CHARTS (35 songs) 📀', canvasWidth / 2, currentY + sectionTitleHeight / 2 + 10);
+  ctx.fillText(
+    '📀 OLD CHARTS (35 songs) 📀',
+    canvasWidth / 2,
+    currentY + sectionTitleHeight / 2 + 10,
+  );
   currentY += sectionTitleHeight;
 
   // Prepare old songs with placeholders
@@ -318,13 +338,25 @@ export const generateRatingChart = async (
         const x = (canvasWidth - (5 * itemWidth + 4 * gap)) / 2 + col * (itemWidth + gap);
         const y = currentY + row * (itemHeight + gap);
 
-        onProgress?.(`Processing old chart ${index + 1}/35: ${song.songName === 'NO DATA' ? 'Empty slot' : song.songName}`);
+        onProgress?.(
+          `Processing old chart ${index + 1}/35: ${song.songName === 'NO DATA' ? 'Empty slot' : song.songName}`,
+        );
 
         const coverArtUrl = coverArtMap[song.songName.trim().toLowerCase()];
         const coverArtImage = await loadCoverArt(coverArtUrl);
 
         try {
-          drawGridItem(ctx, song, x, y, itemWidth, itemHeight, index, song.chartType === 1 ? 'DX' : 'STD', coverArtImage);
+          drawGridItem(
+            ctx,
+            song,
+            x,
+            y,
+            itemWidth,
+            itemHeight,
+            index,
+            song.chartType === 1 ? 'DX' : 'STD',
+            coverArtImage,
+          );
         } catch (itemError) {
           console.error(`Error drawing old song item ${index} ('${song.songName}'):`, itemError);
           // Continue with the rest of the grid
