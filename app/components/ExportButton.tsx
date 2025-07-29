@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { SongWithRating } from '@/app/types';
 import { generateRatingChart } from '@/app/utils/clientImageGenerator';
-import Image from "next/image";
 
 interface ExportButtonProps {
   newSongs: SongWithRating[];
