@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "app/api/generate-rating-image/route.ts": {
+      "includeFiles": "node_modules/skia-canvas/lib/v118/linux-x64-gnu/skia.so"
+    }
+  }
+}
+
