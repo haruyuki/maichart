@@ -49,6 +49,7 @@ export default function Home() {
           setError(null);
         } catch (err) {
           setError('Invalid JSON format or sheetId structure');
+          console.log(err);
         }
       };
       reader.readAsText(file);

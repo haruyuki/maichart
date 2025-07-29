@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import {useEffect, useRef, useState} from 'react';
 import {MaimaiSongDbEntry, SongWithRating} from '../types';
 import ExportButton from './ExportButton';
@@ -175,11 +176,13 @@ export default function RatingGrid({ newSongs, oldSongs, songDb }: RatingGridPro
       </div>
 
       {/* Generated Image */}
-      <div className="w-full" ref={gridRef}>
-        <img
+      <div className="relative w-full" ref={gridRef}>
+        <Image
           src={imageUrl}
           alt="maimai DX Rating Chart"
           className="mx-auto max-w-full rounded-lg shadow-lg"
+          width={1200}
+          height={2000}
         />
       </div>
 

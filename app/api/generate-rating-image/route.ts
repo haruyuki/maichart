@@ -150,7 +150,6 @@ export async function POST(request: NextRequest) {
       }
       try {
         const absoluteUrl = new URL(url, request.url).href;
-        console.log(`🎨 Fetching cover art from: ${absoluteUrl}`);
         const response = await fetch(absoluteUrl, { next: { revalidate: 3600 } }); // Revalidate images every hour
         if (!response.ok) {
           console.error(`Failed to fetch image: ${response.status} ${response.statusText}`);
