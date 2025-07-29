@@ -6,6 +6,14 @@ import {SongWithRating} from '@/app/types';
 import {getDifficultyColor} from '@/app/utils/dxRating';
 import path from 'path';
 
+// Helper function to get safe font string with fallbacks
+const getSafeFont = (size: string, weight: string = '', fontFamily: string = 'Noto Sans'): string => {
+  // Use generic fallbacks that don't require system font libraries
+  const fallbacks = 'Arial, Helvetica, sans-serif';
+  const weightPrefix = weight ? `${weight} ` : '';
+  return `${weightPrefix}${size} "${fontFamily}", ${fallbacks}`;
+};
+
 // Helper function to get achievement rating
 const getAchievementRating = (achievement: number): string => {
   if (achievement >= 100.5) return 'SSS+';
@@ -75,7 +83,7 @@ const drawGridItem = (
   if (isPlaceholder) {
     // Draw placeholder content
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.font = 'bold 16px "Noto Sans"';
+    ctx.font = getSafeFont('16px', 'bold');
     ctx.textAlign = 'center';
     ctx.fillText('NO DATA', x + width / 2, y + height / 2);
     return;
@@ -85,43 +93,43 @@ const drawGridItem = (
 
   // Draw index (top-left)
   ctx.fillStyle = textColor;
-  ctx.font = 'bold 16px "Noto Sans"';
+  ctx.font = getSafeFont('16px', 'bold');
   ctx.textAlign = 'left';
   ctx.fillText((index + 1).toString(), x + 8, y + 20);
 
   // Draw chart type (top-right)
   ctx.fillStyle = chartType === 'DX' ? '#ff6b35' : '#4a90e2';
-  ctx.font = 'bold 13px "Noto Sans"';
+  ctx.font = getSafeFont('13px', 'bold');
   ctx.textAlign = 'right';
   ctx.fillText(chartType, x + width - 8, y + 18);
 
   // Draw song name (truncated)
   ctx.fillStyle = textColor;
-  ctx.font = '14px "Noto Sans"';
+  ctx.font = getSafeFont('14px');
   ctx.textAlign = 'center';
   const truncatedName = song.songName.length > 20 ? song.songName.substring(0, 20) + '...' : song.songName;
   ctx.fillText(truncatedName, x + width / 2, y + 45);
 
   // Draw achievement percentage
   ctx.fillStyle = '#ccc';
-  ctx.font = '13px "Noto Sans"';
+  ctx.font = getSafeFont('13px');
   ctx.fillText(`${song.achievement.toFixed(2)}%`, x + width / 2, y + 65);
 
   // Draw achievement rating
   ctx.fillStyle = '#ffc107';
-  ctx.font = 'bold 25px "Noto Sans"';
+  ctx.font = getSafeFont('25px', 'bold');
   ctx.fillText(getAchievementRating(song.achievement), x + width / 2, y + 90);
 
   // Draw level
   if (song.level !== undefined) {
     ctx.fillStyle = textColor;
-    ctx.font = 'bold 18px "Noto Sans"';
+    ctx.font = getSafeFont('18px', 'bold');
     ctx.fillText(`Lv.${song.level}`, x + width / 2, y + 110);
   }
 
   // Draw DX rating (bottom)
   ctx.fillStyle = '#82caff';
-  ctx.font = 'bold 40px "Noto Sans"';
+  ctx.font = getSafeFont('40px', 'bold');
   ctx.fillText(song.dxRating.toString(), x + width / 2, y + height - 10);
 };
 
@@ -142,10 +150,32 @@ export async function POST(request: NextRequest) {
     // With the new next.config.ts, a standard import will now work.
     const { Canvas, Image, FontLibrary } = await import('skia-canvas');
 
-    // Register the font by providing the file path
+    // Register the font by providing the file path with error handling
     const fontPath = path.join(process.cwd(), 'app', 'assets', 'NotoSans-Regular.ttf');
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    FontLibrary.use("Noto Sans", fontPath);
+    console.log(`🔤 Attempting to load font from: ${fontPath}`);
+
+    try {
+      // Check if font file exists
+      const fs = await import('fs');
+      if (!fs.existsSync(fontPath)) {
+        throw new Error(`Font file not found at: ${fontPath}`);
+      }
+
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      FontLibrary.use("Noto Sans", fontPath);
+      console.log('✅ Font registered successfully');
+
+      // Verify font is available
+      const availableFonts = FontLibrary.families;
+      console.log('📝 Available font families:', availableFonts);
+
+      if (!availableFonts.includes('Noto Sans')) {
+        console.warn('⚠️ Noto Sans not found in available fonts, will use fallback');
+      }
+    } catch (fontError) {
+      console.error('❌ Font loading error:', fontError);
+      console.log('🔄 Continuing with system fallback fonts...');
+    }
 
     // Cache for loaded images
     const imageCache = new Map<string, Image>();
@@ -226,16 +256,16 @@ export async function POST(request: NextRequest) {
     // Draw header
     console.log('✏️ Drawing header...');
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 32px "Noto Sans"';
+    ctx.font = getSafeFont('32px', 'bold');
     ctx.textAlign = 'center';
     ctx.fillText('🎵 maimai DX Rating Chart 🎵', canvasWidth / 2, 50);
 
     // Draw totals
-    ctx.font = 'bold 24px "Noto Sans"';
+    ctx.font = getSafeFont('24px', 'bold');
     ctx.fillText(`Total: ${totalDxRating.toLocaleString()}`, canvasWidth / 2, 90);
 
-    ctx.font = '20px "Noto Sans"';
-    ctx.fillText(`��� New: ${totalNewDxRating.toLocaleString()}`, canvasWidth / 2 - 150, 120);
+    ctx.font = getSafeFont('20px');
+    ctx.fillText(`⭐ New: ${totalNewDxRating.toLocaleString()}`, canvasWidth / 2 - 150, 120);
     ctx.fillText(`📀 Old: ${totalOldDxRating.toLocaleString()}`, canvasWidth / 2 + 150, 120);
     console.log('✅ Header drawn');
 
@@ -244,7 +274,7 @@ export async function POST(request: NextRequest) {
     let currentY = topMargin + headerHeight;
     console.log('🌟 Drawing NEW CHARTS section...');
     ctx.fillStyle = '#000';
-    ctx.font = 'bold 28px "Noto Sans"';
+    ctx.font = getSafeFont('28px', 'bold');
     ctx.textAlign = 'center';
     ctx.fillText('🌟 NEW CHARTS (15 songs) 🌟', canvasWidth / 2, currentY + sectionTitleHeight / 2 + 10);
     currentY += sectionTitleHeight;
@@ -292,7 +322,7 @@ export async function POST(request: NextRequest) {
     currentY += sectionSpacing;
     console.log('📀 Drawing OLD CHARTS section...');
     ctx.fillStyle = '#000';
-    ctx.font = 'bold 28px "Noto Sans"';
+    ctx.font = getSafeFont('28px', 'bold');
     ctx.textAlign = 'center';
     ctx.fillText('📀 OLD CHARTS (35 songs) 📀', canvasWidth / 2, currentY + sectionTitleHeight / 2 + 10);
     currentY += sectionTitleHeight;
