@@ -144,6 +144,7 @@ export async function POST(request: NextRequest) {
 
     // Register the font by providing the file path
     const fontPath = path.join(process.cwd(), 'app', 'assets', 'NotoSans-Regular.ttf');
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     FontLibrary.use("Noto Sans", fontPath);
 
     // Cache for loaded images

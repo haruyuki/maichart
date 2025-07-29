@@ -100,15 +100,17 @@ export default function RatingGrid({ newSongs, oldSongs, songDb }: RatingGridPro
     };
 
     generateImage();
+  }, [newSongs, oldSongs, coverArtMap]);
 
-    // Cleanup previous image URL
+  // Cleanup image URL when component unmounts or URL changes
+  useEffect(() => {
     return () => {
       if (imageUrl) {
-        console.log('🧹 Cleaning up previous image URL');
+        console.log('🧹 Cleaning up image URL');
         URL.revokeObjectURL(imageUrl);
       }
     };
-  }, [newSongs, oldSongs, coverArtMap]);
+  }, [imageUrl]);
 
   // Calculate totals for display
   const totalNewDxRating = newSongs.slice(0, 15).reduce((sum, song) => sum + song.dxRating, 0);
