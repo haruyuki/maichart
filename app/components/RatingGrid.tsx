@@ -1,9 +1,8 @@
 'use client';
 
-import Image from 'next/image';
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {MaimaiSongDbEntry, SongWithRating} from '../types';
-import ExportButton from './ExportButton';
+import {ExportButton} from './ExportButton';
 
 interface RatingGridProps {
   newSongs: SongWithRating[];
@@ -12,11 +11,7 @@ interface RatingGridProps {
 }
 
 export default function RatingGrid({ newSongs, oldSongs, songDb }: RatingGridProps) {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [coverArtMap, setCoverArtMap] = useState<Record<string, string>>({});
-  const gridRef = useRef<HTMLDivElement>(null);
 
   // Build cover art map from songDb
   useEffect(() => {
@@ -31,131 +26,27 @@ export default function RatingGrid({ newSongs, oldSongs, songDb }: RatingGridPro
     setCoverArtMap(map);
   }, [songDb]);
 
-  // Generate image when songs data changes
-  useEffect(() => {
-    const generateImage = async () => {
-      // Wait for cover art map to be ready
-      if (!newSongs.length && !oldSongs.length || Object.keys(coverArtMap).length === 0) {
-        return;
-      }
-
-      console.log('🎵 Starting image generation request...');
-      console.log(`📊 Data to send: ${newSongs.length} new songs, ${oldSongs.length} old songs`);
-
-      setIsGenerating(true);
-      setError(null);
-
-      try {
-        console.log('📡 Sending POST request to /api/generate-rating-image...');
-        const response = await fetch('/api/generate-rating-image', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            newSongs,
-            oldSongs,
-            coverArtMap, // Send the cover art map
-          }),
-        });
-
-        console.log(`📡 Response status: ${response.status} ${response.statusText}`);
-        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
-
-        if (!response.ok) {
-          // Try to get error details from response
-          let errorDetails: string;
-          try {
-            const errorData = await response.json();
-            console.error('❌ Server error details:', errorData);
-            errorDetails = errorData.details || errorData.error || `HTTP ${response.status}`;
-          } catch (parseError) {
-            console.error('❌ Could not parse error response:', parseError);
-            errorDetails = `HTTP ${response.status}: ${response.statusText}`;
-          }
-          throw new Error(`Server error: ${errorDetails}`);
-        }
-
-        console.log('📦 Converting response to blob...');
-        const blob = await response.blob();
-        console.log(`📦 Blob created: ${blob.size} bytes, type: ${blob.type}`);
-
-        console.log('🔗 Creating object URL...');
-        const url = URL.createObjectURL(blob);
-        console.log('✅ Image URL created successfully:', url);
-
-        setImageUrl(url);
-        console.log('🎉 Image generation completed successfully!');
-      } catch (err) {
-        console.error('❌ Error in generateImage:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-        console.error('❌ Error details:', {
-          message: errorMessage,
-          stack: err instanceof Error ? err.stack : 'No stack trace',
-        });
-        setError(`Failed to generate rating chart image: ${errorMessage}`);
-      } finally {
-        setIsGenerating(false);
-      }
-    };
-
-    generateImage();
-  }, [newSongs, oldSongs, coverArtMap]);
-
-  // Cleanup image URL when component unmounts or URL changes
-  useEffect(() => {
-    return () => {
-      if (imageUrl) {
-        console.log('🧹 Cleaning up image URL');
-        URL.revokeObjectURL(imageUrl);
-      }
-    };
-  }, [imageUrl]);
-
   // Calculate totals for display
   const totalNewDxRating = newSongs.slice(0, 15).reduce((sum, song) => sum + song.dxRating, 0);
   const totalOldDxRating = oldSongs.slice(0, 35).reduce((sum, song) => sum + song.dxRating, 0);
   const totalDxRating = totalNewDxRating + totalOldDxRating;
 
-  const exportAsImage = () => {
-    if (!imageUrl) return;
+  // Debug: Log the data we have
+  console.log('🔍 RatingGrid render - Data status:', {
+    newSongs: newSongs?.length || 0,
+    oldSongs: oldSongs?.length || 0,
+    coverArtMapSize: Object.keys(coverArtMap).length,
+  });
 
-    // Create download link
-    const link = document.createElement('a');
-    link.href = imageUrl;
-    link.download = 'maimai-rating-chart.png';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  // Always show the ExportButton if we have data
+  const hasData = newSongs.length > 0 || oldSongs.length > 0;
 
-  if (isGenerating) {
-    return (
-      <div className="flex min-h-[600px] items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4 text-2xl">🎵 Generating Rating Chart... 🎵</div>
-          <div className="animate-spin text-4xl">⭐</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex min-h-[600px] items-center justify-center">
-        <div className="text-center text-red-600">
-          <div className="mb-4 text-2xl">❌ Error</div>
-          <div>{error}</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!imageUrl) {
+  if (!hasData) {
     return (
       <div className="flex min-h-[600px] items-center justify-center">
         <div className="text-center text-gray-600">
           <div className="text-2xl">🎵 No data to display 🎵</div>
+          <div className="mt-4 text-sm">Upload your song data to generate a rating chart</div>
         </div>
       </div>
     );
@@ -177,18 +68,22 @@ export default function RatingGrid({ newSongs, oldSongs, songDb }: RatingGridPro
         </div>
       </div>
 
-      {/* Generated Image */}
-      <div className="relative w-full" ref={gridRef}>
-        <Image
-          src={imageUrl}
-          alt="maimai DX Rating Chart"
-          className="mx-auto max-w-full rounded-lg shadow-lg"
-          width={1200}
-          height={2000}
-        />
+      {/* Instructions */}
+      <div className="mb-8 text-center">
+        <p className="text-lg text-gray-700 mb-2">
+          📊 Your rating data is ready!
+        </p>
+        <p className="text-sm text-gray-600">
+          Click the button below to generate and download your rating chart
+        </p>
       </div>
 
-      <ExportButton onClick={exportAsImage} />
+      {/* Client-side Export Button */}
+      <ExportButton
+        newSongs={newSongs}
+        oldSongs={oldSongs}
+        coverArtMap={coverArtMap}
+      />
     </div>
   );
 }
