@@ -136,65 +136,37 @@ const drawGridItem = (
 export const generateRatingChart = async (
   newSongs: SongWithRating[],
   oldSongs: SongWithRating[],
-  coverArtMap: Record<string, string>
+  coverArtMap: Record<string, string>,
+  onProgress?: (status: string) => void
 ): Promise<string> => {
-  console.log('🎵 Starting client-side image generation...');
-
   // Defensive checks for undefined inputs
   if (!newSongs) {
-    console.warn('⚠️ newSongs is undefined, using empty array');
     newSongs = [];
   }
   if (!oldSongs) {
-    console.warn('⚠️ oldSongs is undefined, using empty array');
     oldSongs = [];
   }
   if (!coverArtMap) {
-    console.warn('⚠️ coverArtMap is undefined, using empty object');
     coverArtMap = {};
   }
 
-  console.log(`📊 Received data: ${newSongs.length} new songs, ${oldSongs.length} old songs`);
-  console.log(`🗺️ Cover art map has ${Object.keys(coverArtMap).length} entries`);
-
-  // Log some sample songs and their lookup attempts
-  if (newSongs.length > 0) {
-    console.log('🎵 Sample new songs for matching:');
-    newSongs.slice(0, 3).forEach((song, i) => {
-      const lookupKey = song.songName.trim().toLowerCase();
-      const found = coverArtMap[lookupKey];
-      console.log(`  ${i+1}. "${song.songName}" -> "${lookupKey}" -> ${found ? 'FOUND' : 'NOT FOUND'}`);
-    });
-  }
-
-  if (oldSongs.length > 0) {
-    console.log('🎵 Sample old songs for matching:');
-    oldSongs.slice(0, 3).forEach((song, i) => {
-      const lookupKey = song.songName.trim().toLowerCase();
-      const found = coverArtMap[lookupKey];
-      console.log(`  ${i+1}. "${song.songName}" -> "${lookupKey}" -> ${found ? 'FOUND' : 'NOT FOUND'}`);
-    });
-  }
+  onProgress?.('Setting up canvas...');
 
   // Cache for loaded images
   const imageCache = new Map<string, HTMLImageElement>();
   const loadCoverArt = async (url: string): Promise<HTMLImageElement | undefined> => {
     if (!url) {
-      console.log('⚠️ No cover art URL provided');
       return undefined;
     }
     if (imageCache.has(url)) {
-      console.log(`📦 Using cached image for: ${url}`);
       return imageCache.get(url);
     }
     try {
-      console.log(`🔄 Loading cover art from: ${url}`);
       const image = await loadImage(url);
       imageCache.set(url, image);
-      console.log(`✅ Successfully loaded: ${url}`);
       return image;
     } catch (e) {
-      console.error(`❌ Failed to load cover art from ${url}`, e);
+      console.error(`Failed to load cover art from ${url}`, e);
       return undefined;
     }
   };
@@ -226,7 +198,7 @@ export const generateRatingChart = async (
     oldSongsGridHeight +
     bottomPadding;
 
-  console.log(`🎨 Calculated canvas dimensions: ${canvasWidth}x${canvasHeight}`);
+  onProgress?.('Creating canvas...');
 
   // Create canvas element
   const canvas = document.createElement('canvas');
@@ -238,26 +210,23 @@ export const generateRatingChart = async (
     throw new Error('Failed to get canvas context');
   }
 
-  console.log('✅ Canvas created successfully');
+  onProgress?.('Drawing background...');
 
   // Background
-  console.log('🎨 Drawing background...');
   const gradient = ctx.createLinearGradient(0, 0, canvasWidth, canvasHeight);
   gradient.addColorStop(0, '#667eea');
   gradient.addColorStop(1, '#764ba2');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-  console.log('✅ Background drawn');
 
   // Calculate totals
-  console.log('🧮 Calculating totals...');
   const totalNewDxRating = newSongs.slice(0, 15).reduce((sum, song) => sum + song.dxRating, 0);
   const totalOldDxRating = oldSongs.slice(0, 35).reduce((sum, song) => sum + song.dxRating, 0);
   const totalDxRating = totalNewDxRating + totalOldDxRating;
-  console.log(`📊 Totals calculated: New=${totalNewDxRating}, Old=${totalOldDxRating}, Total=${totalDxRating}`);
+
+  onProgress?.('Drawing header...');
 
   // Draw header
-  console.log('✏️ Drawing header...');
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 32px Arial, sans-serif';
   ctx.textAlign = 'center';
@@ -270,11 +239,9 @@ export const generateRatingChart = async (
   ctx.font = '20px Arial, sans-serif';
   ctx.fillText(`⭐ New: ${totalNewDxRating.toLocaleString()}`, canvasWidth / 2 - 150, 120);
   ctx.fillText(`📀 Old: ${totalOldDxRating.toLocaleString()}`, canvasWidth / 2 + 150, 120);
-  console.log('✅ Header drawn');
 
   // Draw NEW CHARTS section
   let currentY = topMargin + headerHeight;
-  console.log('🌟 Drawing NEW CHARTS section...');
   ctx.fillStyle = '#000';
   ctx.font = 'bold 28px Arial, sans-serif';
   ctx.textAlign = 'center';
@@ -294,7 +261,6 @@ export const generateRatingChart = async (
       version: 0,
     });
   }
-  console.log(`📝 Prepared ${preparedNewSongs.length} new songs (with placeholders)`);
 
   // Draw new songs grid (5 columns, 3 rows)
   for (let row = 0; row < newSongsRows; row++) {
@@ -305,25 +271,24 @@ export const generateRatingChart = async (
         const x = (canvasWidth - (5 * itemWidth + 4 * gap)) / 2 + col * (itemWidth + gap);
         const y = currentY + row * (itemHeight + gap);
 
+        onProgress?.(`Processing new chart ${index + 1}/15: ${song.songName === 'NO DATA' ? 'Empty slot' : song.songName}`);
+
         const coverArtUrl = coverArtMap[song.songName.trim().toLowerCase()];
-        console.log(`🎨 Song: "${song.songName}" -> URL: ${coverArtUrl || 'NOT FOUND'}`);
         const coverArtImage = await loadCoverArt(coverArtUrl);
 
         try {
           drawGridItem(ctx, song, x, y, itemWidth, itemHeight, index, song.chartType === 1 ? 'DX' : 'STD', coverArtImage);
         } catch (itemError) {
-          console.error(`❌ Error drawing new song item ${index} ('${song.songName}'):`, itemError);
+          console.error(`Error drawing new song item ${index} ('${song.songName}'):`, itemError);
           // Continue with the rest of the grid
         }
       }
     }
   }
   currentY += newSongsGridHeight;
-  console.log('✅ NEW CHARTS grid drawn');
 
   // Draw OLD CHARTS section
   currentY += sectionSpacing;
-  console.log('📀 Drawing OLD CHARTS section...');
   ctx.fillStyle = '#000';
   ctx.font = 'bold 28px Arial, sans-serif';
   ctx.textAlign = 'center';
@@ -343,7 +308,6 @@ export const generateRatingChart = async (
       version: 0,
     });
   }
-  console.log(`📝 Prepared ${preparedOldSongs.length} old songs (with placeholders)`);
 
   // Draw old songs grid (5 columns, 7 rows)
   for (let row = 0; row < oldSongsRows; row++) {
@@ -354,24 +318,27 @@ export const generateRatingChart = async (
         const x = (canvasWidth - (5 * itemWidth + 4 * gap)) / 2 + col * (itemWidth + gap);
         const y = currentY + row * (itemHeight + gap);
 
+        onProgress?.(`Processing old chart ${index + 1}/35: ${song.songName === 'NO DATA' ? 'Empty slot' : song.songName}`);
+
         const coverArtUrl = coverArtMap[song.songName.trim().toLowerCase()];
         const coverArtImage = await loadCoverArt(coverArtUrl);
 
         try {
           drawGridItem(ctx, song, x, y, itemWidth, itemHeight, index, song.chartType === 1 ? 'DX' : 'STD', coverArtImage);
         } catch (itemError) {
-          console.error(`❌ Error drawing old song item ${index} ('${song.songName}'):`, itemError);
+          console.error(`Error drawing old song item ${index} ('${song.songName}'):`, itemError);
           // Continue with the rest of the grid
         }
       }
     }
   }
-  console.log('✅ OLD CHARTS grid drawn');
+
+  onProgress?.('Finalizing image...');
 
   // Convert canvas to data URL
-  console.log('🖼️ Converting canvas to data URL...');
   const dataUrl = canvas.toDataURL('image/png');
-  console.log(`✅ PNG data URL created successfully`);
+
+  onProgress?.('Image generation complete!');
 
   return dataUrl;
 };

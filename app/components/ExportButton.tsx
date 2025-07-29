@@ -18,6 +18,7 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+  const [progressMessage, setProgressMessage] = useState<string>('');
 
   // Auto-generate image when data is available
   useEffect(() => {
@@ -32,35 +33,36 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
       const hasCoverArtMap = Object.keys(coverArtMap || {}).length > 0;
 
       if (hasSongs && !hasCoverArtMap) {
-        console.log('⏳ Waiting for cover art map to be built...');
+        setProgressMessage('Waiting for cover art database...');
         return; // Wait for cover art map to be ready
       }
 
       try {
         setIsGenerating(true);
         setError(null);
-
-        console.log('🎵 Starting automatic image generation...');
-        console.log('📊 Data received:', {
-          newSongs: newSongs?.length || 0,
-          oldSongs: oldSongs?.length || 0,
-          coverArtMapSize: Object.keys(coverArtMap || {}).length,
-        });
+        setProgressMessage('Starting image generation...');
 
         // Defensive checks for props
         const safeNewSongs = newSongs || [];
         const safeOldSongs = oldSongs || [];
         const safeCoverArtMap = coverArtMap || {};
 
-        // Generate the image using client-side canvas
-        const dataUrl = await generateRatingChart(safeNewSongs, safeOldSongs, safeCoverArtMap);
+        // Generate the image using client-side canvas with progress callback
+        const dataUrl = await generateRatingChart(
+          safeNewSongs,
+          safeOldSongs,
+          safeCoverArtMap,
+          (status: string) => {
+            setProgressMessage(status);
+          }
+        );
         setGeneratedImageUrl(dataUrl);
-
-        console.log('✅ Image generated successfully');
+        setProgressMessage('');
 
       } catch (err) {
         console.error('❌ Image generation failed:', err);
         setError(err instanceof Error ? err.message : 'Failed to generate image');
+        setProgressMessage('');
       } finally {
         setIsGenerating(false);
       }
@@ -148,6 +150,13 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
       {!generatedImageUrl && !isGenerating && !error && (
         <p className="text-gray-600 text-sm text-center max-w-md">
           Upload your song data to automatically generate your rating chart
+        </p>
+      )}
+
+      {/* Progress Message */}
+      {progressMessage && (
+        <p className="text-blue-500 text-sm text-center max-w-md">
+          {progressMessage}
         </p>
       )}
     </div>

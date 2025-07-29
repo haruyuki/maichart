@@ -15,30 +15,16 @@ export default function RatingGrid({ newSongs, oldSongs, songDb }: RatingGridPro
 
   // Build cover art map from songDb
   useEffect(() => {
-    if (!songDb) {
-      console.log('🔍 No songDb available for cover art mapping');
-      return;
-    }
+    if (!songDb) return;
 
-    console.log(`🔍 Building cover art map from ${songDb.length} database entries`);
     const map: Record<string, string> = {};
-    let mappedCount = 0;
-
     songDb.forEach((entry: MaimaiSongDbEntry) => {
       if (entry.title && entry.image_url) {
         const key = entry.title.trim().toLowerCase();
-        const url = `https://otoge-db.net/maimai/jacket/${entry.image_url}`;
-        map[key] = url;
-        mappedCount++;
-
-        // Log first few entries for debugging
-        if (mappedCount <= 5) {
-          console.log(`🎨 Mapped: "${entry.title}" -> "${key}" -> ${url}`);
-        }
+        map[key] = `https://otoge-db.net/maimai/jacket/${entry.image_url}`;
       }
     });
 
-    console.log(`✅ Cover art map built: ${mappedCount} entries mapped`);
     setCoverArtMap(map);
   }, [songDb]);
 
@@ -46,13 +32,6 @@ export default function RatingGrid({ newSongs, oldSongs, songDb }: RatingGridPro
   const totalNewDxRating = newSongs.slice(0, 15).reduce((sum, song) => sum + song.dxRating, 0);
   const totalOldDxRating = oldSongs.slice(0, 35).reduce((sum, song) => sum + song.dxRating, 0);
   const totalDxRating = totalNewDxRating + totalOldDxRating;
-
-  // Debug: Log the data we have
-  console.log('🔍 RatingGrid render - Data status:', {
-    newSongs: newSongs?.length || 0,
-    oldSongs: oldSongs?.length || 0,
-    coverArtMapSize: Object.keys(coverArtMap).length,
-  });
 
   // Always show the ExportButton if we have data
   const hasData = newSongs.length > 0 || oldSongs.length > 0;
