@@ -22,7 +22,7 @@ export default function Home() {
 
   // Fetch song DB once on mount
   useEffect(() => {
-    fetch('https://otoge-db.net/maimai/data/music-ex-intl.json')
+    fetch('https://otoge-db.net/maimai/data/music-ex.json')
       .then((res) => res.json())
       .then((db: MaimaiSongDbEntry[]) => setSongDb(db));
   }, []);
