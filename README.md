@@ -1,4 +1,6 @@
 # MaiMai Achievement Tracker
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fharuyuki%2Fmaichart.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fharuyuki%2Fmaichart?ref=badge_shield)
+
 
 This is a web application designed to help MaiMai players track their song achievements and calculate their DX Rating. It visualizes scores for both new and old songs, providing a clear overview of performance.
 
@@ -32,3 +34,7 @@ This is a web application designed to help MaiMai players track their song achie
 ---
 
 _Inspired by SEGA's MaiMai Universe. All rights reserved to their respective owners._
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fharuyuki%2Fmaichart.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fharuyuki%2Fmaichart?ref=badge_large)
